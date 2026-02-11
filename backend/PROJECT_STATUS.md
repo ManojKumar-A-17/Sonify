@@ -1,4 +1,4 @@
-# EchoVerse Backend - Project Status
+# Sonify Backend - Project Status
 
 ## ✅ Completed Features
 

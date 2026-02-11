@@ -1,4 +1,4 @@
-# EchoVerse Backend
+# Sonify Backend
 
 FastAPI-based Text-to-Speech backend supporting text and PDF inputs.
 

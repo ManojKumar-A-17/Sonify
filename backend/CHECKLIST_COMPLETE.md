@@ -1,4 +1,4 @@
-# EchoVerse Backend - Completeness Checklist
+# Sonify Backend - Completeness Checklist
 
 ## ✅ File Structure
 

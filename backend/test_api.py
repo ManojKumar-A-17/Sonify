@@ -70,7 +70,7 @@ def test_tts_empty():
 
 if __name__ == "__main__":
     print("=" * 50)
-    print("EchoVerse API Test Suite")
+    print("Sonify API Test Suite")
     print("=" * 50 + "\n")
     
     try:

@@ -12,7 +12,7 @@ def quick_test():
     print("Quick TTS Test\n")
     
     payload = {
-        "text": "This is a quick test of the EchoVerse text to speech API."
+        "text": "This is a quick test of the Sonify text to speech API."
     }
     
     try:

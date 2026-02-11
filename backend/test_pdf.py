@@ -58,7 +58,7 @@ def test_invalid_file():
 
 if __name__ == "__main__":
     print("=" * 50)
-    print("EchoVerse PDF Test Suite")
+    print("Sonify PDF Test Suite")
     print("=" * 50 + "\n")
     
     try:

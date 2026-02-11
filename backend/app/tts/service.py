@@ -1,21 +1,53 @@
 from gtts import gTTS
 from pydub import AudioSegment
-import os
 import uuid
-from app.tts.utils import chunk_text
+import os
+from app.tts.utils import split_text
 
-def generate_speech(text: str) -> tuple[str, int]:
+AUDIO_DIR = "audio"
+os.makedirs(AUDIO_DIR, exist_ok=True)
+
+def generate_audio_from_text(text, lang="en", slow=False):
     """
-    Generate speech from text, handling long texts by chunking and merging.
+    Generate audio from text with support for long texts via chunking and merging.
     
     Args:
         text: Input text to convert to speech
+        lang: Language code (default: "en")
+        slow: Slow speech mode (default: False)
         
     Returns:
+        Path to the final merged audio file
+    """
+    chunks = split_text(text)
+    audio_parts = []
+
+    for i, chunk in enumerate(chunks):
+        filename = f"{AUDIO_DIR}/part_{i}_{uuid.uuid4()}.mp3"
+        tts = gTTS(text=chunk, lang=lang, slow=slow)
+        tts.save(filename)
+        audio_parts.append(filename)
+
+    final_audio = AudioSegment.empty()
+    for part in audio_parts:
+        final_audio += AudioSegment.from_mp3(part)
+
+    final_name = f"{AUDIO_DIR}/final_{uuid.uuid4()}.mp3"
+    final_audio.export(final_name, format="mp3")
+
+    # Optional: cleanup parts
+    for part in audio_parts:
+        os.remove(part)
+
+    return final_name
+
+# Keep old function for backward compatibility
+def generate_speech(text: str) -> tuple[str, int]:
+    """
+    Backward compatibility wrapper for generate_audio_from_text.
+    
+    Returns:
         Tuple of (audio_filename, number_of_chunks)
-        
-    Raises:
-        Exception: If TTS generation or audio merging fails
     """
     # Create necessary directories
     os.makedirs("audio", exist_ok=True)
@@ -26,7 +58,7 @@ def generate_speech(text: str) -> tuple[str, int]:
     audio_path = os.path.join("audio", audio_filename)
     
     # Chunk text if necessary
-    chunks = chunk_text(text)
+    chunks = split_text(text)
     
     if len(chunks) == 1:
         # Single chunk - direct generation

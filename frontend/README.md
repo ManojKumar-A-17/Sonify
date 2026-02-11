@@ -1,152 +1,73 @@
-# EchoVerse Frontend
+# Welcome to your Lovable project
 
-Modern React TypeScript frontend for the EchoVerse text-to-speech platform.
+## Project info
 
-## Tech Stack
+**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
 
-- **React 18** - UI library
-- **TypeScript** - Type safety
-- **Vite** - Build tool and dev server
-- **React Router v7** - Routing with future flags
-- **TanStack Query** - Server state management
-- **Tailwind CSS** - Styling
-- **shadcn/ui** - UI components
-- **Radix UI** - Accessible primitives
-- **Lucide React** - Icons
+## How can I edit this code?
 
-## Getting Started
+There are several ways of editing your application.
 
-### Prerequisites
+**Use Lovable**
 
-- Node.js 18+ and npm
+Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
 
-### Installation
+Changes made via Lovable will be committed automatically to this repo.
 
-```bash
-npm install
-```
+**Use your preferred IDE**
 
-### Development
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-```bash
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+
+Follow these steps:
+
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
+
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
+
+# Step 3: Install the necessary dependencies.
+npm i
+
+# Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
 
-The app will be available at `http://localhost:5173`
+**Edit a file directly in GitHub**
 
-### Build
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
 
-```bash
-npm run build
-```
+**Use GitHub Codespaces**
 
-### Preview Production Build
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
 
-```bash
-npm run preview
-```
+## What technologies are used for this project?
 
-### Linting
+This project is built with:
 
-```bash
-npm run lint
-```
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
 
-### Testing
+## How can I deploy this project?
 
-```bash
-npm test
-```
+Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
 
-## Project Structure
+## Can I connect a custom domain to my Lovable project?
 
-```
-frontend/
-├── public/              # Static assets
-├── src/
-│   ├── components/      # React components
-│   │   ├── ui/         # shadcn/ui components
-│   │   └── ...         # Custom components
-│   ├── hooks/          # Custom React hooks
-│   ├── lib/            # Utilities and helpers
-│   ├── pages/          # Page components
-│   ├── App.tsx         # Main app component
-│   ├── main.tsx        # Entry point
-│   └── index.css       # Global styles
-├── index.html          # HTML entry point
-├── package.json        # Dependencies and scripts
-├── vite.config.ts      # Vite configuration
-├── tailwind.config.ts  # Tailwind configuration
-└── tsconfig.json       # TypeScript configuration
-```
+Yes, you can!
 
-## Features
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
-- **Text-to-Speech** - Convert text to natural-sounding speech
-- **PDF Upload** - Extract text from PDFs and convert to audio
-- **Voice Selection** - Choose from multiple voices
-- **Speed Control** - Adjust playback speed
-- **Audio Preview** - Preview and download generated audio
-- **Responsive Design** - Works on all devices
-- **Dark Mode Ready** - Prepared for theme switching
-
-## API Integration
-
-The frontend connects to the backend API at `http://localhost:8000` (configurable).
-
-### Endpoints
-
-- `POST /api/tts` - Text-to-speech conversion
-- `POST /api/pdf` - PDF to speech conversion
-
-## Configuration
-
-### Environment Variables
-
-Create a `.env` file:
-
-```env
-VITE_API_URL=http://localhost:8000
-```
-
-## Development Guidelines
-
-### Code Style
-
-- Use TypeScript for all new files
-- Follow ESLint rules
-- Use Prettier for formatting
-- Use functional components with hooks
-- Prefer named exports over default exports
-
-### Component Guidelines
-
-- Keep components small and focused
-- Use composition over inheritance
-- Extract reusable logic into custom hooks
-- Use shadcn/ui components when possible
-
-### State Management
-
-- Use TanStack Query for server state
-- Use React hooks (useState, useReducer) for local state
-- Avoid prop drilling with context when needed
-
-## Troubleshooting
-
-### Port already in use
-
-If port 5173 is in use, Vite will automatically try the next available port.
-
-### Build errors
-
-Clear node_modules and reinstall:
-
-```bash
-rm -rf node_modules package-lock.json
-npm install
-```
-
-## License
-
-MIT
+Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)

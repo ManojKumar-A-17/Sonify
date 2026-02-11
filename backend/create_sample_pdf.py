@@ -14,14 +14,14 @@ def create_sample_pdf(filename="sample.pdf"):
     
     # Page 1
     c.setFont("Helvetica-Bold", 16)
-    c.drawString(1 * inch, height - 1 * inch, "EchoVerse Sample PDF")
+    c.drawString(1 * inch, height - 1 * inch, "Sonify Sample PDF")
     
     c.setFont("Helvetica", 12)
     y = height - 1.5 * inch
     
     text_lines = [
         "This is a sample PDF document created for testing the",
-        "EchoVerse PDF-to-Speech conversion feature.",
+        "Sonify PDF-to-Speech conversion feature.",
         "",
         "Artificial Intelligence and Machine Learning",
         "",
@@ -35,7 +35,7 @@ def create_sample_pdf(filename="sample.pdf"):
         "Natural language processing enables computers to understand",
         "and generate human language. This technology powers virtual",
         "assistants, translation services, and text-to-speech systems",
-        "like EchoVerse.",
+        "like Sonify.",
     ]
     
     for line in text_lines:
