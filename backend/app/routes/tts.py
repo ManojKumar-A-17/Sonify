@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from app.tts.service import generate_audio_from_text, generate_speech
 from app.tts.pdf_utils import extract_text_from_pdf
 import os
+from urllib.parse import quote
 
 router = APIRouter()
 
@@ -132,11 +133,13 @@ async def pdf_to_speech_frontend(
             audio_file_path = generate_audio_from_text(text, lang, slow)
             
             # Return audio file as blob for frontend
+            # URL-encode the extracted text to handle Unicode characters in HTTP headers
+            encoded_text = quote(text[:500], safe='')
             return FileResponse(
                 path=audio_file_path,
                 media_type="audio/mpeg",
                 filename="audio.mp3",
-                headers={"X-Extracted-Text": text[:500]}  # First 500 chars in header
+                headers={"X-Extracted-Text": encoded_text}  # URL-encoded to handle Unicode
             )
         
         finally:
