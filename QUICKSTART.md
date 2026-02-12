@@ -158,12 +158,33 @@ Don't forget to update:
 
 ## Production Build
 
-### Backend
+### Backend (Deployment-Ready)
+
+The backend is now optimized for cloud deployment:
+
+✅ **Automatic File Cleanup** - Audio files are deleted after streaming
+✅ **No persistent storage needed** - Works on ephemeral file systems (Heroku, Render, etc.)
+✅ **Hourly cleanup** - Orphaned files are automatically removed
+✅ **Multi-instance ready** - No shared file dependencies
+
 ```powershell
 cd backend
-# Set production environment variables
-# Deploy with gunicorn or similar WSGI server
+
+# For production deployment:
+# 1. Update CORS origins in main.py with your production domain
+# 2. Use production WSGI server (gunicorn, uvicorn)
+# 3. Set environment variables as needed
+
+# Example with uvicorn:
+uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
+
+# Example with gunicorn:
+gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 ```
+
+**Monitoring:**
+- Health endpoint: `GET /health` - Shows file count and cleanup status
+- Manual cleanup: `GET /cleanup` - Trigger cleanup manually
 
 ### Frontend
 ```powershell
@@ -185,6 +206,32 @@ VITE_API_URL=http://localhost:8000
 
 ### Backend
 Currently using hardcoded values. No `.env` file needed for development.
+
+For production, update CORS origins in `main.py` to match your frontend domain.
+
+## Deployment Notes
+
+### Cloud Platform Compatibility
+
+The backend is optimized for cloud platforms with ephemeral storage:
+
+**✅ Compatible Platforms:**
+- Heroku
+- Render
+- Railway
+- Google Cloud Run
+- AWS Lambda / Elastic Beanstalk
+- Azure App Service
+- DigitalOcean App Platform
+- Fly.io
+
+**How it works:**
+- Audio files are generated in `/audio` directory
+- Files are streamed to client immediately
+- Files are automatically deleted after response is sent
+- Hourly cleanup removes any orphaned files (>1 hour old)
+- No persistent storage required
+- Works perfectly on platforms that reset file systems on restart
 
 ## Next Steps
 
