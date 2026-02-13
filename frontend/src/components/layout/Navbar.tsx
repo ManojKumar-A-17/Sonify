@@ -24,7 +24,7 @@ export function Navbar() {
               <AudioWaveform className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl font-bold text-foreground">
-              Echo<span className="text-gradient">Verse</span>
+              Soni<span className="text-gradient">fy</span>
             </span>
           </Link>
 
