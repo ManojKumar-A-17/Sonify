@@ -2,8 +2,10 @@ from gtts import gTTS
 from pydub import AudioSegment
 import uuid
 import os
+import tempfile
 from app.tts.utils import split_text
 
+# Use temp directory for audio generation
 AUDIO_DIR = "audio"
 os.makedirs(AUDIO_DIR, exist_ok=True)
 

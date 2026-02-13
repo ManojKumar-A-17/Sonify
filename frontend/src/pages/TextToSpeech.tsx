@@ -86,7 +86,7 @@ export default function TextToSpeech() {
     if (audioUrl) {
       const link = document.createElement('a');
       link.href = audioUrl;
-      link.download = 'echoverse-audio.mp3';
+      link.download = 'sonify-audio.mp3';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

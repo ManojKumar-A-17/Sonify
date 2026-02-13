@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, BackgroundTasks
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from app.tts.service import generate_audio_from_text, generate_speech
@@ -8,18 +8,27 @@ from urllib.parse import quote
 
 router = APIRouter()
 
+def cleanup_file(file_path: str):
+    """Delete file after response is sent"""
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+    except Exception as e:
+        print(f"Failed to cleanup file {file_path}: {e}")
+
 class TTSRequest(BaseModel):
     text: str
     lang: str = "en"
     slow: bool = False
 
 @router.post("/tts")
-def text_to_speech(request: TTSRequest):
+def text_to_speech(request: TTSRequest, background_tasks: BackgroundTasks):
     """
     Convert text to speech - Returns audio blob for frontend playback.
     
     Args:
         request: TTSRequest with text, lang, and slow parameters
+        background_tasks: FastAPI background tasks for cleanup
         
     Returns:
         Audio file as blob response
@@ -35,6 +44,9 @@ def text_to_speech(request: TTSRequest):
             request.lang,
             request.slow
         )
+        
+        # Schedule file cleanup after response is sent
+        background_tasks.add_task(cleanup_file, audio_file_path)
         
         # Return audio file as blob for frontend
         return FileResponse(
@@ -85,7 +97,8 @@ def text_to_speech_json(request: TTSRequest):
 async def pdf_to_speech_frontend(
     file: UploadFile = File(...),
     lang: str = "en",
-    slow: bool = False
+    slow: bool = False,
+    background_tasks: BackgroundTasks = None
 ):
     """
     PDF endpoint for frontend - Returns audio blob for direct playback.
@@ -94,6 +107,7 @@ async def pdf_to_speech_frontend(
         file: Uploaded PDF file
         lang: Language code (default: "en")
         slow: Slow speech mode (default: False)
+        background_tasks: FastAPI background tasks for cleanup
         
     Returns:
         Audio file as blob response with extracted text in headers
@@ -132,6 +146,10 @@ async def pdf_to_speech_frontend(
             # Generate speech using provided language and slow mode settings
             audio_file_path = generate_audio_from_text(text, lang, slow)
             
+            # Schedule cleanup for both temp PDF and audio file
+            if background_tasks:
+                background_tasks.add_task(cleanup_file, audio_file_path)
+            
             # Return audio file as blob for frontend
             # URL-encode the extracted text to handle Unicode characters in HTTP headers
             encoded_text = quote(text[:500], safe='')
@@ -143,7 +161,7 @@ async def pdf_to_speech_frontend(
             )
         
         finally:
-            # Clean up temporary file
+            # Clean up temporary PDF file
             if os.path.exists(temp_path):
                 os.remove(temp_path)
     
