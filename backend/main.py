@@ -6,7 +6,7 @@ import os
 from datetime import datetime, timedelta
 import glob
 
-app = FastAPI(title="EchoVerse TTS Backend")
+app = FastAPI(title="Sonify TTS Backend")
 
 # Configure CORS
 app.add_middleware(
@@ -68,7 +68,7 @@ app.mount("/audio", StaticFiles(directory="audio"), name="audio")
 @app.get("/")
 def read_root():
     return {
-        "message": "EchoVerse TTS Backend",
+        "message": "Sonify TTS Backend",
         "version": "1.0.0",
         "endpoints": {
             "text_to_speech": "/api/tts",

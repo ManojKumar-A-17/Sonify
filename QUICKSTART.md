@@ -1,4 +1,4 @@
-# 🚀 EchoVerse Quick Start Guide
+# 🚀 Sonify Quick Start Guide
 
 ## Prerequisites
 
