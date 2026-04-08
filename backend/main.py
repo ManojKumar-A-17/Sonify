@@ -15,6 +15,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Translated-Text", "X-Detected-Source-Language", "X-Translated-Text-Truncated"],
 )
 
 # Create necessary directories
@@ -73,6 +74,7 @@ def read_root():
         "endpoints": {
             "text_to_speech": "/api/tts",
             "text_to_speech_json": "/api/tts/json", 
+            "translate_and_speak": "/api/tts",
             "pdf_to_speech": "/api/pdf",
             "speech_to_text": "/api/transcribe",
             "pdf_to_speech_legacy": "/api/tts/pdf",

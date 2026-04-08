@@ -3,7 +3,10 @@ import tempfile
 from pathlib import Path
 
 import speech_recognition as sr
+from langdetect import DetectorFactory, LangDetectException, detect
 from pydub import AudioSegment
+
+DetectorFactory.seed = 0
 
 
 SUPPORTED_AUDIO_TYPES = {
@@ -18,8 +21,24 @@ SUPPORTED_AUDIO_TYPES = {
     "audio/webm",
 }
 
+SUPPORTED_STT_LANGUAGES = {
+    "en": "en-US",
+    "es": "es-ES",
+    "fr": "fr-FR",
+    "de": "de-DE",
+    "it": "it-IT",
+    "pt": "pt-PT",
+}
 
-def transcribe_audio_bytes(audio_bytes: bytes, filename: str) -> str:
+
+def detect_transcript_language(text: str) -> str:
+    try:
+        return detect(text)
+    except LangDetectException:
+        return "unknown"
+
+
+def transcribe_audio_bytes(audio_bytes: bytes, filename: str, lang: str = "auto") -> tuple[str, str]:
     """
     Convert uploaded audio into text using SpeechRecognition.
 
@@ -28,6 +47,11 @@ def transcribe_audio_bytes(audio_bytes: bytes, filename: str) -> str:
     """
     suffix = Path(filename).suffix or ".audio"
     recognizer = sr.Recognizer()
+    candidate_languages = (
+        list(SUPPORTED_STT_LANGUAGES.items())
+        if lang == "auto"
+        else [(lang, SUPPORTED_STT_LANGUAGES.get(lang, SUPPORTED_STT_LANGUAGES["en"]))]
+    )
 
     with tempfile.TemporaryDirectory() as temp_dir:
         input_path = os.path.join(temp_dir, f"input{suffix}")
@@ -43,12 +67,46 @@ def transcribe_audio_bytes(audio_bytes: bytes, filename: str) -> str:
         with sr.AudioFile(wav_path) as source:
             audio_data = recognizer.record(source)
 
-        try:
-            return recognizer.recognize_google(audio_data).strip()
-        except sr.UnknownValueError:
-            return ""
-        except sr.RequestError as exc:
-            raise RuntimeError(
-                "Speech recognition service is unavailable right now. "
-                "Please try again when the network is available."
-            ) from exc
+        candidates: list[tuple[str, str]] = []
+
+        for language_code, recognition_language in candidate_languages:
+            try:
+                transcript = recognizer.recognize_google(
+                    audio_data,
+                    language=recognition_language,
+                ).strip()
+                if transcript:
+                    candidates.append((language_code, transcript))
+            except sr.UnknownValueError:
+                continue
+            except sr.RequestError as exc:
+                raise RuntimeError(
+                    "Speech recognition service is unavailable right now. "
+                    "Please try again when the network is available."
+                ) from exc
+
+        if lang != "auto":
+            if candidates:
+                return candidates[0][1], candidates[0][0]
+            return "", "unknown"
+
+        best_match: tuple[str, str] | None = None
+        fallback_match: tuple[str, str] | None = None
+
+        for language_code, transcript in candidates:
+            detected_language = detect_transcript_language(transcript)
+
+            if detected_language == language_code:
+                current_choice = (transcript, language_code)
+                if best_match is None or len(transcript) > len(best_match[0]):
+                    best_match = current_choice
+
+            if fallback_match is None or len(transcript) > len(fallback_match[0]):
+                fallback_match = (transcript, language_code)
+
+        if best_match is not None:
+            return best_match
+        if fallback_match is not None:
+            return fallback_match
+
+        return "", "unknown"

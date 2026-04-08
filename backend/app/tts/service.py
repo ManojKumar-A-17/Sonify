@@ -1,4 +1,5 @@
 from gtts import gTTS
+from gtts.lang import tts_langs
 from pydub import AudioSegment
 import uuid
 import os
@@ -8,6 +9,7 @@ from app.tts.utils import split_text
 # Use temp directory for audio generation
 AUDIO_DIR = "audio"
 os.makedirs(AUDIO_DIR, exist_ok=True)
+SUPPORTED_TTS_LANGUAGES = tts_langs()
 
 def generate_audio_from_text(text, lang="en", slow=False):
     """
@@ -21,6 +23,9 @@ def generate_audio_from_text(text, lang="en", slow=False):
     Returns:
         Path to the final merged audio file
     """
+    if lang not in SUPPORTED_TTS_LANGUAGES:
+        raise ValueError(f"Unsupported language code: {lang}")
+
     chunks = split_text(text)
     audio_parts = []
 

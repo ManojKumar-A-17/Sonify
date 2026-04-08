@@ -7,7 +7,9 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { AudioPlayer } from '@/components/tts/AudioPlayer';
 import { LanguageSelector } from '@/components/tts/LanguageSelector';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { sourceLanguages } from '@/lib/languages';
 import { cn } from '@/lib/utils';
 
 const MAX_CHARS = 5000;
@@ -16,9 +18,13 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 export default function TextToSpeech() {
   const [text, setText] = useState('');
   const [language, setLanguage] = useState('en');
+  const [sourceLanguage, setSourceLanguage] = useState('auto');
+  const [translateBeforeSpeaking, setTranslateBeforeSpeaking] = useState(false);
   const [slowMode, setSlowMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [translatedTextPreview, setTranslatedTextPreview] = useState('');
+  const [translatedPreviewTruncated, setTranslatedPreviewTruncated] = useState(false);
   const { toast } = useToast();
 
   const charCount = text.length;
@@ -42,6 +48,8 @@ export default function TextToSpeech() {
 
     setIsLoading(true);
     setAudioUrl(null);
+    setTranslatedTextPreview('');
+    setTranslatedPreviewTruncated(false);
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/tts`, {
@@ -51,6 +59,8 @@ export default function TextToSpeech() {
           text,
           lang: language,
           slow: slowMode,
+          source_lang: sourceLanguage,
+          translate_before_speaking: translateBeforeSpeaking,
         }),
       });
 
@@ -62,10 +72,17 @@ export default function TextToSpeech() {
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       setAudioUrl(url);
+      const translatedHeader = response.headers.get('X-Translated-Text');
+      if (translatedHeader) {
+        setTranslatedTextPreview(decodeURIComponent(translatedHeader));
+      }
+      setTranslatedPreviewTruncated(response.headers.get('X-Translated-Text-Truncated') === 'true');
 
       toast({
         title: 'Audio Generated',
-        description: 'Your text has been converted to speech successfully.',
+        description: translateBeforeSpeaking
+          ? 'Your text was translated and converted to speech successfully.'
+          : 'Your text has been converted to speech successfully.',
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -151,8 +168,47 @@ export default function TextToSpeech() {
 
                 <div className="mt-8 space-y-6">
                   <div className="space-y-3">
-                    <Label className="text-sm font-semibold text-foreground">Language</Label>
+                    <Label className="text-sm font-semibold text-foreground">Voice language</Label>
                     <LanguageSelector value={language} onChange={setLanguage} />
+                    <p className="text-sm leading-6 text-muted-foreground">
+                      This changes the speaking voice language. Translation only happens when the toggle below is enabled.
+                    </p>
+                  </div>
+
+                  <div className="rounded-[1.5rem] border border-border/70 bg-background/75 p-5 shadow-soft">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <Label htmlFor="translate-toggle" className="text-sm font-semibold text-foreground">
+                          Translate before speaking
+                        </Label>
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                          Turn this on to translate your text into the selected voice language before audio generation.
+                        </p>
+                      </div>
+                      <Switch
+                        id="translate-toggle"
+                        checked={translateBeforeSpeaking}
+                        onCheckedChange={setTranslateBeforeSpeaking}
+                      />
+                    </div>
+
+                    {translateBeforeSpeaking && (
+                      <div className="mt-5 space-y-3">
+                        <Label className="text-sm font-semibold text-foreground">Source language</Label>
+                        <Select value={sourceLanguage} onValueChange={setSourceLanguage}>
+                          <SelectTrigger className="h-12 rounded-2xl border-border/60 bg-background/70 shadow-soft">
+                            <SelectValue placeholder="Select source language" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-2xl border-border/60 bg-card shadow-large">
+                            {sourceLanguages.map((lang) => (
+                              <SelectItem key={lang.code} value={lang.code}>
+                                {lang.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
 
                   <div className="rounded-[1.5rem] border border-border/70 bg-background/75 p-5 shadow-soft">
@@ -201,6 +257,23 @@ export default function TextToSpeech() {
                 </Button>
               </div>
             </div>
+
+            {translatedTextPreview && (
+              <div className="panel-surface mt-6 rounded-[2rem] p-6 sm:p-8 animate-slide-up">
+                <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Translated Preview</p>
+                <h3 className="text-display mt-3 text-2xl font-bold text-foreground">Text Used for Speech</h3>
+                {translatedPreviewTruncated && (
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                    This preview is shortened for long inputs, but the full translated text was used for audio generation.
+                  </p>
+                )}
+                <div className="mt-5 rounded-[1.5rem] border border-border/70 bg-background/75 p-5 shadow-soft">
+                  <p className="whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
+                    {translatedTextPreview}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {audioUrl && <AudioPlayer audioUrl={audioUrl} onDownload={handleDownload} className="mt-6" />}
           </div>

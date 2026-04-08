@@ -6,3 +6,13 @@ export const languages = [
   { code: 'it', name: 'Italian' },
   { code: 'pt', name: 'Portuguese' },
 ];
+
+export const sourceLanguages = [
+  { code: 'auto', name: 'Auto Detect' },
+  ...languages,
+];
+
+export const sttLanguages = [
+  { code: 'auto', name: 'Best Effort Auto Detect' },
+  ...languages,
+];

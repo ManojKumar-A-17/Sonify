@@ -5,8 +5,11 @@ import { Check, Clipboard, Download, FileAudio2, Loader2, Mic2, Sparkles, Upload
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { sttLanguages } from '@/lib/languages';
 import { cn } from '@/lib/utils';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -21,6 +24,8 @@ export default function PDFUpload() {
   const [file, setFile] = useState<File | null>(null);
   const [transcript, setTranscript] = useState('');
   const [copied, setCopied] = useState(false);
+  const [language, setLanguage] = useState('auto');
+  const [resolvedLanguage, setResolvedLanguage] = useState('auto');
   const { toast } = useToast();
 
   const supportedFormats = useMemo(() => ['MP3', 'WAV', 'M4A', 'OGG', 'WEBM'], []);
@@ -42,6 +47,7 @@ export default function PDFUpload() {
       setFile(audioFile);
       setTranscript('');
       setCopied(false);
+      setResolvedLanguage('auto');
     },
     [toast]
   );
@@ -61,6 +67,7 @@ export default function PDFUpload() {
 
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('lang', language);
 
       const response = await fetch(`${API_URL}/api/transcribe`, {
         method: 'POST',
@@ -76,6 +83,7 @@ export default function PDFUpload() {
     },
     onSuccess: (data) => {
       setTranscript(data.text);
+      setResolvedLanguage(data.language);
       toast({
         title: 'Transcription Ready',
         description: 'Your audio has been converted into text.',
@@ -132,6 +140,7 @@ export default function PDFUpload() {
     setFile(null);
     setTranscript('');
     setCopied(false);
+    setResolvedLanguage('auto');
   };
 
   return (
@@ -207,6 +216,25 @@ export default function PDFUpload() {
                     <p className="mt-3 text-sm leading-6 text-muted-foreground">{supportedFormats.join(', ')}</p>
                   </div>
 
+                  <div className="space-y-3">
+                    <Label className="text-sm font-semibold text-foreground">Which language is spoken in this audio?</Label>
+                    <Select value={language} onValueChange={setLanguage} disabled={transcriptionMutation.isPending}>
+                      <SelectTrigger className="h-12 rounded-2xl border-border/60 bg-background/70 shadow-soft">
+                        <SelectValue placeholder="Select spoken language" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-2xl border-border/60 bg-card shadow-large">
+                        {sttLanguages.map((lang) => (
+                          <SelectItem key={lang.code} value={lang.code}>
+                            {lang.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-sm leading-6 text-muted-foreground">
+                      Choose a language for better accuracy, or use Best Effort Auto Detect if you are not sure.
+                    </p>
+                  </div>
+
                   <Button onClick={handleProcess} disabled={transcriptionMutation.isPending || !file} variant="gradient" size="xl" className="w-full">
                     {transcriptionMutation.isPending ? (
                       <>
@@ -246,6 +274,12 @@ export default function PDFUpload() {
                       <div className="rounded-[1.5rem] border border-border/70 bg-background/75 p-4 shadow-soft">
                         <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Characters</p>
                         <p className="mt-3 text-lg font-semibold capitalize text-foreground">{transcript.length.toLocaleString()}</p>
+                      </div>
+                      <div className="rounded-[1.5rem] border border-border/70 bg-background/75 p-4 shadow-soft">
+                        <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Language</p>
+                        <p className="mt-3 text-lg font-semibold capitalize text-foreground">
+                          {sttLanguages.find((item) => item.code === resolvedLanguage)?.name ?? resolvedLanguage}
+                        </p>
                       </div>
                       <div className="rounded-[1.5rem] border border-border/70 bg-background/75 p-4 shadow-soft">
                         <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Status</p>
@@ -290,6 +324,7 @@ export default function PDFUpload() {
                   <ul className="mt-4 space-y-3 text-sm leading-6 text-muted-foreground">
                     <li>Clear speech with low background noise usually improves transcript quality.</li>
                     <li>Very long recordings may need to be split into smaller parts for better reliability.</li>
+                    <li>Best Effort Auto Detect is heuristic, so manually choosing the spoken language is usually more accurate.</li>
                     <li>This version uses a lightweight recognizer, so network availability affects transcription.</li>
                   </ul>
                 </div>
