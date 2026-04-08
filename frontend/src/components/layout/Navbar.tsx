@@ -1,91 +1,96 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, AudioWaveform } from 'lucide-react';
+import { AudioWaveform, Menu, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const navLinks = [
   { name: 'Home', path: '/' },
   { name: 'Text to Speech', path: '/text-to-speech' },
-  { name: 'PDF Upload', path: '/pdf-upload' },
+  { name: 'Speech to Text', path: '/speech-to-text' },
 ];
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const isHome = location.pathname === '/';
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-soft group-hover:shadow-glow transition-shadow duration-300">
-              <AudioWaveform className="w-5 h-5 text-white" />
+    <nav className="fixed left-0 right-0 top-0 z-50">
+      <div className="border-b border-white/10 bg-slate-950/70 backdrop-blur-xl">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex h-20 items-center justify-between">
+            <Link to="/" className="group flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl gradient-primary shadow-soft transition-all duration-300 group-hover:-translate-y-0.5 group-hover:shadow-glow">
+                <AudioWaveform className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <span className="text-display text-xl font-bold text-white">
+                  Soni<span className="text-gradient">fy</span>
+                </span>
+                <p className="text-[11px] uppercase tracking-[0.28em] text-white/45">
+                  Voice Studio
+                </p>
+              </div>
+            </Link>
+
+            <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-2 py-2 shadow-soft md:flex">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={cn(
+                    'rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200',
+                    location.pathname === link.path
+                      ? 'bg-white text-slate-950 shadow-soft'
+                      : 'text-white/70 hover:bg-white/8 hover:text-white'
+                  )}
+                >
+                  {link.name}
+                </Link>
+              ))}
             </div>
-            <span className="text-xl font-bold text-foreground">
-              Soni<span className="text-gradient">fy</span>
-            </span>
-          </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
-                  location.pathname === link.path
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                )}
-              >
-                {link.name}
-              </Link>
-            ))}
+            <div className="hidden items-center gap-3 md:flex">
+              {isHome && (
+                <div className="badge-chip border-white/10 bg-white/10 text-white/80">
+                  <Sparkles className="h-4 w-4" />
+                  Instant audio generation
+                </div>
+              )}
+              <Button variant="gradient" size="default" asChild>
+                <Link to="/text-to-speech">Launch Workspace</Link>
+              </Button>
+            </div>
+
+            <button
+              className="rounded-full border border-white/10 bg-white/5 p-2 text-white transition-colors hover:bg-white/10 md:hidden"
+              onClick={() => setIsOpen(!isOpen)}
+              aria-label="Toggle menu"
+            >
+              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
           </div>
-
-          {/* Desktop CTA */}
-          <div className="hidden md:flex items-center gap-3">
-            <Button variant="gradient" size="default" asChild>
-              <Link to="/text-to-speech">Get Started</Link>
-            </Button>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2 rounded-lg hover:bg-muted transition-colors"
-            onClick={() => setIsOpen(!isOpen)}
-            aria-label="Toggle menu"
-          >
-            {isOpen ? (
-              <X className="w-6 h-6 text-foreground" />
-            ) : (
-              <Menu className="w-6 h-6 text-foreground" />
-            )}
-          </button>
         </div>
       </div>
 
-      {/* Mobile Navigation */}
       <div
         className={cn(
-          "md:hidden absolute top-16 left-0 right-0 bg-background/95 backdrop-blur-lg border-b border-border/50 transition-all duration-300",
-          isOpen ? "opacity-100 visible" : "opacity-0 invisible"
+          'absolute left-0 right-0 top-20 border-b border-white/10 bg-slate-950/95 backdrop-blur-xl transition-all duration-300 md:hidden',
+          isOpen ? 'visible opacity-100' : 'invisible opacity-0'
         )}
       >
-        <div className="container mx-auto px-4 py-4 space-y-2">
+        <div className="container mx-auto space-y-2 px-4 py-4">
           {navLinks.map((link) => (
             <Link
               key={link.path}
               to={link.path}
               onClick={() => setIsOpen(false)}
               className={cn(
-                "block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200",
+                'block rounded-2xl px-4 py-3 text-base font-medium transition-all duration-200',
                 location.pathname === link.path
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  ? 'bg-white text-slate-950'
+                  : 'text-white/75 hover:bg-white/10 hover:text-white'
               )}
             >
               {link.name}
@@ -94,7 +99,7 @@ export function Navbar() {
           <div className="pt-2">
             <Button variant="gradient" size="lg" className="w-full" asChild>
               <Link to="/text-to-speech" onClick={() => setIsOpen(false)}>
-                Get Started
+                Launch Workspace
               </Link>
             </Button>
           </div>

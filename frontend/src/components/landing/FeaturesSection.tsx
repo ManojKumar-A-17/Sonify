@@ -1,82 +1,56 @@
-import { Mic, FileText, Globe, Zap } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { AudioLines, FileStack, Languages, TimerReset } from 'lucide-react';
 
 const features = [
   {
-    icon: Mic,
-    title: 'Natural Voice Quality',
-    description: 'Powered by Google\'s advanced text-to-speech engine for natural-sounding voices that captivate listeners.',
-    gradient: 'from-purple-500 to-pink-500',
+    icon: AudioLines,
+    title: 'Studio-grade playback',
+    description: 'Clean generation flow, built-in preview controls, and better hierarchy around the final audio output.',
   },
   {
-    icon: FileText,
-    title: 'PDF to Speech',
-    description: 'Upload PDFs and automatically extract and convert text to audio. Perfect for articles, reports, and documents.',
-    gradient: 'from-blue-500 to-cyan-500',
+    icon: FileStack,
+    title: 'Document-first conversion',
+    description: 'Bring PDFs into the same polished workflow so long-form reading feels just as refined as short prompts.',
   },
   {
-    icon: Globe,
-    title: 'Multi-Language Support',
-    description: 'Support for English, Spanish, French, German, Italian, Portuguese, and more languages coming soon.',
-    gradient: 'from-teal-500 to-green-500',
+    icon: Languages,
+    title: 'Clear language controls',
+    description: 'Move between supported languages with fewer clicks and more confidence about what is being generated.',
   },
   {
-    icon: Zap,
-    title: 'Lightning Fast',
-    description: 'Get your audio in seconds with intelligent chunking optimized for large documents and batch processing.',
-    gradient: 'from-orange-500 to-yellow-500',
+    icon: TimerReset,
+    title: 'Faster repeat usage',
+    description: 'The interface is structured for people who generate often, not only for a one-time demo visit.',
   },
 ];
 
 export function FeaturesSection() {
   return (
-    <section className="py-24 bg-background">
+    <section className="bg-background py-24">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <div className="text-center mb-16">
-          <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-            Features
-          </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
-            Everything You Need
-          </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Powerful features designed to make text-to-speech conversion effortless and professional.
+        <div className="mb-16 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <span className="badge-chip">Product Strengths</span>
+            <h2 className="text-display mt-6 text-4xl font-bold text-foreground sm:text-5xl">
+              A cleaner product story for every surface.
+            </h2>
+          </div>
+          <p className="max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
+            The upgrade is not just visual. We are shaping Sonify into a more intentional listening tool, with better emphasis, pacing, and user confidence.
           </p>
         </div>
 
-        {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
           {features.map((feature, index) => (
             <div
               key={feature.title}
-              className={cn(
-                "group relative p-8 rounded-3xl bg-card border border-border/50 hover-lift cursor-default",
-                "animate-fade-in"
-              )}
+              className="panel-surface group rounded-[2rem] p-7 transition-all duration-300 hover:-translate-y-1 hover:shadow-large"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              {/* Icon */}
-              <div className={cn(
-                "w-14 h-14 rounded-2xl flex items-center justify-center mb-6 bg-gradient-to-br shadow-medium",
-                feature.gradient
-              )}>
-                <feature.icon className="w-7 h-7 text-white" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-foreground text-background shadow-soft">
+                <feature.icon className="h-6 w-6" />
               </div>
-
-              {/* Content */}
-              <h3 className="text-xl font-semibold text-foreground mb-3 group-hover:text-primary transition-colors">
-                {feature.title}
-              </h3>
-              <p className="text-muted-foreground leading-relaxed">
-                {feature.description}
-              </p>
-
-              {/* Hover Gradient Background */}
-              <div className={cn(
-                "absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-5 transition-opacity duration-300 bg-gradient-to-br",
-                feature.gradient
-              )} />
+              <h3 className="mt-6 text-2xl font-semibold text-foreground">{feature.title}</h3>
+              <p className="mt-4 text-sm leading-7 text-muted-foreground">{feature.description}</p>
             </div>
           ))}
         </div>

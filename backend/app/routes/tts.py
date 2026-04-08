@@ -1,8 +1,10 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File, BackgroundTasks
+from fastapi import APIRouter, HTTPException, UploadFile, File, BackgroundTasks, Form
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from app.tts.service import generate_audio_from_text, generate_speech
+from app.tts.service import generate_audio_from_text, generate_speech, SUPPORTED_TTS_LANGUAGES
 from app.tts.pdf_utils import extract_text_from_pdf
+from app.tts.stt_service import SUPPORTED_AUDIO_TYPES, SUPPORTED_STT_LANGUAGES, transcribe_audio_bytes
+from app.tts.translation_service import SUPPORTED_TRANSLATION_LANGUAGES, translate_text
 import os
 from urllib.parse import quote
 
@@ -20,6 +22,41 @@ class TTSRequest(BaseModel):
     text: str
     lang: str = "en"
     slow: bool = False
+    translate_before_speaking: bool = False
+    source_lang: str = "auto"
+
+
+def validate_file_size(content: bytes, max_size_mb: int = 10):
+    max_size = max_size_mb * 1024 * 1024
+    if len(content) > max_size:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File too large. Maximum size is {max_size_mb}MB"
+        )
+
+
+def validate_tts_language(lang: str):
+    if lang not in SUPPORTED_TTS_LANGUAGES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported TTS language: {lang}"
+        )
+
+
+def validate_translation_language(lang: str):
+    if lang not in SUPPORTED_TRANSLATION_LANGUAGES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported translation language: {lang}"
+        )
+
+
+def validate_stt_language(lang: str):
+    if lang != "auto" and lang not in SUPPORTED_STT_LANGUAGES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported speech-to-text language: {lang}"
+        )
 
 @router.post("/tts")
 def text_to_speech(request: TTSRequest, background_tasks: BackgroundTasks):
@@ -37,10 +74,24 @@ def text_to_speech(request: TTSRequest, background_tasks: BackgroundTasks):
         # Validate input
         if not request.text or not request.text.strip():
             raise HTTPException(status_code=400, detail="Text cannot be empty")
+        validate_tts_language(request.lang)
+        validate_translation_language(request.source_lang)
+
+        text_for_speech = request.text
+        translated_preview = ""
+        detected_source = request.source_lang
+
+        if request.translate_before_speaking:
+            text_for_speech, detected_source = translate_text(
+                request.text,
+                request.source_lang,
+                request.lang,
+            )
+            translated_preview = text_for_speech
         
         # Generate speech with lang and slow parameters
         audio_file_path = generate_audio_from_text(
-            request.text,
+            text_for_speech,
             request.lang,
             request.slow
         )
@@ -52,7 +103,12 @@ def text_to_speech(request: TTSRequest, background_tasks: BackgroundTasks):
         return FileResponse(
             path=audio_file_path,
             media_type="audio/mpeg",
-            filename="audio.mp3"
+            filename="audio.mp3",
+            headers={
+                "X-Translated-Text": quote(translated_preview[:1200], safe=""),
+                "X-Detected-Source-Language": detected_source,
+                "X-Translated-Text-Truncated": "true" if len(translated_preview) > 1200 else "false",
+            },
         )
     
     except HTTPException:
@@ -75,17 +131,31 @@ def text_to_speech_json(request: TTSRequest):
         # Validate input
         if not request.text or not request.text.strip():
             raise HTTPException(status_code=400, detail="Text cannot be empty")
+        validate_tts_language(request.lang)
+        validate_translation_language(request.source_lang)
+
+        text_for_speech = request.text
+        detected_source = request.source_lang
+
+        if request.translate_before_speaking:
+            text_for_speech, detected_source = translate_text(
+                request.text,
+                request.source_lang,
+                request.lang,
+            )
         
         # Generate speech with lang and slow parameters
         audio_path = generate_audio_from_text(
-            request.text,
+            text_for_speech,
             request.lang,
             request.slow
         )
         
         return {
             "status": "success",
-            "audio_file": audio_path
+            "audio_file": audio_path,
+            "translated_text": text_for_speech if request.translate_before_speaking else "",
+            "detected_source_language": detected_source,
         }
     
     except HTTPException:
@@ -113,22 +183,13 @@ async def pdf_to_speech_frontend(
         Audio file as blob response with extracted text in headers
     """
     try:
-        # Validate file
-        if not file.filename.endswith('.pdf'):
+        if not file.filename or not file.filename.lower().endswith('.pdf'):
             raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+        validate_tts_language(lang)
         
-        # Read file content
         content = await file.read()
+        validate_file_size(content)
         
-        # Validate file size (10MB limit)
-        max_size = 10 * 1024 * 1024  # 10MB in bytes
-        if len(content) > max_size:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"File too large. Maximum size is {max_size / (1024*1024):.0f}MB"
-            )
-        
-        # Save temporarily
         temp_path = f"temp/{file.filename}"
         os.makedirs("temp", exist_ok=True)
         
@@ -136,28 +197,21 @@ async def pdf_to_speech_frontend(
             f.write(content)
         
         try:
-            # Extract text from PDF
             text = extract_text_from_pdf(temp_path)
             
-            # Validate extracted text
             if not text or not text.strip():
                 raise HTTPException(status_code=400, detail="No text found in PDF or PDF is empty")
             
-            # Generate speech using provided language and slow mode settings
             audio_file_path = generate_audio_from_text(text, lang, slow)
             
-            # Schedule cleanup for both temp PDF and audio file
             if background_tasks:
                 background_tasks.add_task(cleanup_file, audio_file_path)
             
-            # Return audio file as blob for frontend
-            # URL-encode the extracted text to handle Unicode characters in HTTP headers
-            encoded_text = quote(text[:500], safe='')
             return FileResponse(
                 path=audio_file_path,
                 media_type="audio/mpeg",
                 filename="audio.mp3",
-                headers={"X-Extracted-Text": encoded_text}  # URL-encoded to handle Unicode
+                headers={"X-Extracted-Text": text[:500]}
             )
         
         finally:
@@ -182,20 +236,11 @@ async def pdf_to_speech_legacy(file: UploadFile = File(...)):
         JSON with audio_url, text_length, chunks count, and extracted_text
     """
     try:
-        # Validate file
-        if not file.filename.endswith('.pdf'):
+        if not file.filename or not file.filename.lower().endswith('.pdf'):
             raise HTTPException(status_code=400, detail="Only PDF files are allowed")
         
-        # Read file content
         content = await file.read()
-        
-        # Validate file size (10MB limit)
-        max_size = 10 * 1024 * 1024  # 10MB in bytes
-        if len(content) > max_size:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"File too large. Maximum size is {max_size / (1024*1024):.0f}MB"
-            )
+        validate_file_size(content)
         
         # Save temporarily
         temp_path = f"temp/{file.filename}"
@@ -231,6 +276,43 @@ async def pdf_to_speech_legacy(file: UploadFile = File(...)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF processing failed: {str(e)}")
+
+
+@router.post("/transcribe")
+async def transcribe_audio(file: UploadFile = File(...), lang: str = Form("auto")):
+    """
+    Transcribe uploaded audio into text.
+    """
+    try:
+        if file.content_type not in SUPPORTED_AUDIO_TYPES:
+            raise HTTPException(
+                status_code=400,
+                detail="Unsupported audio format. Use MP3, WAV, M4A, MP4, MPEG, OGG, or WEBM."
+            )
+        validate_stt_language(lang)
+
+        content = await file.read()
+        validate_file_size(content)
+        transcript, resolved_language = transcribe_audio_bytes(content, file.filename or "audio", lang)
+
+        if not transcript.strip():
+            raise HTTPException(status_code=400, detail="No speech could be transcribed from the uploaded audio")
+
+        return {
+            "status": "success",
+            "source_type": "audio",
+            "filename": file.filename,
+            "text": transcript,
+            "character_count": len(transcript),
+            "language": resolved_language if lang == "auto" else lang,
+        }
+
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Speech-to-text failed: {str(e)}")
 
 # Keep old TTS endpoint for backward compatibility
 class LegacyTTSRequest(BaseModel):
