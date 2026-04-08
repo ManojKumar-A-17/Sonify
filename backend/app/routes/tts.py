@@ -3,8 +3,8 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from app.tts.service import generate_audio_from_text, generate_speech
 from app.tts.pdf_utils import extract_text_from_pdf
+from app.tts.stt_service import SUPPORTED_AUDIO_TYPES, transcribe_audio_bytes
 import os
-from urllib.parse import quote
 
 router = APIRouter()
 
@@ -20,6 +20,15 @@ class TTSRequest(BaseModel):
     text: str
     lang: str = "en"
     slow: bool = False
+
+
+def validate_file_size(content: bytes, max_size_mb: int = 10):
+    max_size = max_size_mb * 1024 * 1024
+    if len(content) > max_size:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File too large. Maximum size is {max_size_mb}MB"
+        )
 
 @router.post("/tts")
 def text_to_speech(request: TTSRequest, background_tasks: BackgroundTasks):
@@ -113,22 +122,12 @@ async def pdf_to_speech_frontend(
         Audio file as blob response with extracted text in headers
     """
     try:
-        # Validate file
-        if not file.filename.endswith('.pdf'):
+        if not file.filename or not file.filename.lower().endswith('.pdf'):
             raise HTTPException(status_code=400, detail="Only PDF files are allowed")
         
-        # Read file content
         content = await file.read()
+        validate_file_size(content)
         
-        # Validate file size (10MB limit)
-        max_size = 10 * 1024 * 1024  # 10MB in bytes
-        if len(content) > max_size:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"File too large. Maximum size is {max_size / (1024*1024):.0f}MB"
-            )
-        
-        # Save temporarily
         temp_path = f"temp/{file.filename}"
         os.makedirs("temp", exist_ok=True)
         
@@ -136,28 +135,21 @@ async def pdf_to_speech_frontend(
             f.write(content)
         
         try:
-            # Extract text from PDF
             text = extract_text_from_pdf(temp_path)
             
-            # Validate extracted text
             if not text or not text.strip():
                 raise HTTPException(status_code=400, detail="No text found in PDF or PDF is empty")
             
-            # Generate speech using provided language and slow mode settings
             audio_file_path = generate_audio_from_text(text, lang, slow)
             
-            # Schedule cleanup for both temp PDF and audio file
             if background_tasks:
                 background_tasks.add_task(cleanup_file, audio_file_path)
             
-            # Return audio file as blob for frontend
-            # URL-encode the extracted text to handle Unicode characters in HTTP headers
-            encoded_text = quote(text[:500], safe='')
             return FileResponse(
                 path=audio_file_path,
                 media_type="audio/mpeg",
                 filename="audio.mp3",
-                headers={"X-Extracted-Text": encoded_text}  # URL-encoded to handle Unicode
+                headers={"X-Extracted-Text": text[:500]}
             )
         
         finally:
@@ -182,20 +174,11 @@ async def pdf_to_speech_legacy(file: UploadFile = File(...)):
         JSON with audio_url, text_length, chunks count, and extracted_text
     """
     try:
-        # Validate file
-        if not file.filename.endswith('.pdf'):
+        if not file.filename or not file.filename.lower().endswith('.pdf'):
             raise HTTPException(status_code=400, detail="Only PDF files are allowed")
         
-        # Read file content
         content = await file.read()
-        
-        # Validate file size (10MB limit)
-        max_size = 10 * 1024 * 1024  # 10MB in bytes
-        if len(content) > max_size:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"File too large. Maximum size is {max_size / (1024*1024):.0f}MB"
-            )
+        validate_file_size(content)
         
         # Save temporarily
         temp_path = f"temp/{file.filename}"
@@ -231,6 +214,41 @@ async def pdf_to_speech_legacy(file: UploadFile = File(...)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF processing failed: {str(e)}")
+
+
+@router.post("/transcribe")
+async def transcribe_audio(file: UploadFile = File(...)):
+    """
+    Transcribe uploaded audio into text.
+    """
+    try:
+        if file.content_type not in SUPPORTED_AUDIO_TYPES:
+            raise HTTPException(
+                status_code=400,
+                detail="Unsupported audio format. Use MP3, WAV, M4A, MP4, MPEG, OGG, or WEBM."
+            )
+
+        content = await file.read()
+        validate_file_size(content)
+        transcript = transcribe_audio_bytes(content, file.filename or "audio")
+
+        if not transcript.strip():
+            raise HTTPException(status_code=400, detail="No speech could be transcribed from the uploaded audio")
+
+        return {
+            "status": "success",
+            "source_type": "audio",
+            "filename": file.filename,
+            "text": transcript,
+            "character_count": len(transcript),
+        }
+
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Speech-to-text failed: {str(e)}")
 
 # Keep old TTS endpoint for backward compatibility
 class LegacyTTSRequest(BaseModel):

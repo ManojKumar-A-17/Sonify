@@ -19,6 +19,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/text-to-speech" element={<TextToSpeech />} />
+          <Route path="/speech-to-text" element={<PDFUpload />} />
           <Route path="/pdf-upload" element={<PDFUpload />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

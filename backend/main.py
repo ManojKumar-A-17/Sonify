@@ -74,6 +74,7 @@ def read_root():
             "text_to_speech": "/api/tts",
             "text_to_speech_json": "/api/tts/json", 
             "pdf_to_speech": "/api/pdf",
+            "speech_to_text": "/api/transcribe",
             "pdf_to_speech_legacy": "/api/tts/pdf",
             "docs": "/docs"
         }
