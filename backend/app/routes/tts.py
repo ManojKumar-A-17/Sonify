@@ -10,7 +10,13 @@ from urllib.parse import quote
 
 router = APIRouter()
 
-
+def cleanup_file(file_path: str):
+    """Delete file after response is sent"""
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+    except Exception as e:
+        print(f"Failed to cleanup file {file_path}: {e}")
 
 class TTSRequest(BaseModel):
     text: str
